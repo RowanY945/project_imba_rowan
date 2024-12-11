@@ -22,7 +22,7 @@ jobs:
     - name: Deploy CloudFormation stack
       run: |
         aws cloudformation deploy \
-          --template-file glue/crawler.yaml \
+          --template-file glue/crawler.yml \
           --stack-name imba-glue-crawler \
           --capabilities CAPABILITY_IAM \
           --no-fail-on-empty-changeset
