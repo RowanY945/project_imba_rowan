@@ -1,0 +1,80 @@
+# Specifies CloudFormation template version
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'AWS Glue Crawler for Instacart Data'
+
+Resources:
+  # 1. DATABASE DEFINITION
+  RawtestDataBase:
+    Type: AWS::Glue::Database  # Creates a Glue Database
+    Properties:
+      CatalogId: !Ref AWS::AccountId  # References your AWS account ID
+      DatabaseInput:
+        Name: test_db
+        Description: 'Database for test'
+
+  # 2. IAM ROLE DEFINITION
+  GlueServiceRole:
+    Type: AWS::IAM::Role  # Creates an IAM Role
+    Properties:
+      # Trust relationship - allows Glue to assume this role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: glue.amazonaws.com
+            Action: sts:AssumeRole
+      
+      # Attach AWS managed policy for Glue
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
+      
+      # Custom policy for S3 access
+      Policies:
+        - PolicyName: S3BucketAccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject    # Permission to read objects
+                  - s3:ListBucket   # Permission to list bucket contents
+                  - s3:PutObject
+                Resource:
+                  - arn:aws:s3:::imba-rowan/*  # Access to objects
+                  - arn:aws:s3:::imba-rowan    # Access to bucket
+
+  # 3. CRAWLER DEFINITION
+  TableDefinitionCrawler:
+    Type: AWS::Glue::Crawler  # Creates a Glue Crawler
+    Properties:
+      Name: imba-data-crawler
+      Role: !GetAtt GlueServiceRole.Arn  # References the IAM role created above
+      DatabaseName: !Ref RawtestDataBase  # References the database created above
+      
+      
+      # S3 locations to scan
+      Targets:
+        S3Targets:
+          - Path: s3://imba-rowan/data
+      
+      # How to handle schema changes
+      SchemaChangePolicy:
+        UpdateBehavior: UPDATE_IN_DATABASE  # Update tables when schema changes
+        DeleteBehavior: LOG  # Log when columns are deleted
+      
+      # Advanced configuration
+      Configuration: |
+        {
+          "Version": 1.0,
+          "CrawlerOutput": {
+            "Partitions": { "AddOrUpdateBehavior": "InheritFromTable" },
+            "Tables": { "AddOrUpdateBehavior": "MergeNewColumns" }
+          }
+        }
+
+# Output values after stack creation
+Outputs:
+  CrawlerName:
+    Description: Name of the created Glue Crawler
+    Value: !Ref TableDefinitionCrawler
