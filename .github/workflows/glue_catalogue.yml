@@ -32,7 +32,7 @@ jobs:
 
       # Deploy Crawler Role
       - name: Deploy Crawler Role
-        working-directory: IaC/IAM/Glue_Crawler
+        working-directory: IaC/Glue_Crawler
         run: |
           terraform init
           terraform validate
