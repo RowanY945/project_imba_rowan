@@ -2,63 +2,6 @@ provider "aws" {
   region = var.aws_region
 }
 
-# Create IAM role for Glue crawler
-resource "aws_iam_role" "glue_crawler_role" {
-  name = var.crawler_policy_name
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Action = "sts:AssumeRole"
-        Effect = "Allow"
-        Principal = {
-          Service = "glue.amazonaws.com"
-        }
-      }
-    ]
-  })
-}
-
-# Attach AWS managed policies
-resource "aws_iam_role_policy_attachment" "s3_full_access" {
-  role       = aws_iam_role.glue_crawler_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-}
-
-resource "aws_iam_role_policy_attachment" "glue_service_role" {
-  role       = aws_iam_role.glue_crawler_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
-}
-
-# KMS access policy
-resource "aws_iam_role_policy" "kms_access" {
-  name = "Encrypt-Decrypt-ALL"
-  role = aws_iam_role.glue_crawler_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "VisualEditor0"
-        Effect = "Allow"
-        Action = [
-          "kms:Decrypt",
-          "kms:Encrypt",
-          "kms:GenerateDataKey"
-        ]
-        Resource = "*"
-      }
-    ]
-  })
-}
-
-# Output the role ARN
-output "glue_crawler_role_arn" {
-  description = "ARN of the Glue crawler IAM role"
-  value       = aws_iam_role.glue_crawler_role.arn
-}
-
 resource "aws_glue_catalog_database" "jobs_database" {
   name        = var.database_name
   description = "Database for job information data in Parquet format"
@@ -194,7 +137,7 @@ resource "aws_glue_security_configuration" "crawler_security" {
 resource "aws_glue_crawler" "jobs_crawler" {
   database_name = aws_glue_catalog_database.jobs_database.name
   name          = var.crawler_name
-  role          = aws_iam_role.glue_crawler_role.arn
+  role          = var.crawler_policy_name
   security_configuration = aws_glue_security_configuration.crawler_security.name
 
   catalog_target {
