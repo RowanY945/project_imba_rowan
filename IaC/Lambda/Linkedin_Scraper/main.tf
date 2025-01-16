@@ -11,21 +11,20 @@ provider "aws" {
   region = "ap-southeast-2"  # Australia region
 }
 
-# Use data source to reference existing IAM role
+# Use existing role
 data "aws_iam_role" "existing_lambda_role" {
   name = "LambdaWebApiRole-DATA15"
 }
 
 # Lambda Function
 resource "aws_lambda_function" "linkedin_scraper" {
-  filename     = "scripts/lambda/linkedin_scraper.zip"
-  function_name    = "linkedinscraper_test"
-  role         = data.aws_iam_role.existing_lambda_role.arn
-  handler      = "lambda_function.lambda_handler"
-  runtime      = "python3.12"
-  timeout      = 180
-  memory_size  = 128
-
+  filename         = "${path.module}/../../scripts/lambda/linkedin_scraper.zip"
+  function_name    = "linkedinscraper"
+  role            = data.aws_iam_role.existing_lambda_role.arn
+  handler         = "lambda_function.lambda_handler"
+  runtime         = "python3.12"
+  timeout         = 180
+  memory_size     = 128
 
   ephemeral_storage {
     size = 512
