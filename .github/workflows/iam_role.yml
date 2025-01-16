@@ -1,4 +1,5 @@
 name: Deploy IAM Roles
+
 on:
   workflow_dispatch:
     inputs:
@@ -6,23 +7,27 @@ on:
         description: "S3 bucket name for storing Terraform plans"
         required: true
       s3_path:
-        description: "S3 path prefix for plans "
+        description: "S3 path prefix for plans"
         required: true
+      force_update:
+        description: "Force update existing roles"
+        type: boolean
+        default: false
 
 jobs:
   terraform:
     name: 'Deploy IAM Resources'
     runs-on: ubuntu-latest
-
+    
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v3
-
+      
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: "1.5.7"
-
+      
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
@@ -30,8 +35,25 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-southeast-2
 
+      # Check for existing roles
+      - name: Check Existing Roles
+        id: check_roles
+        run: |
+          # Check Crawler Role
+          CRAWLER_ROLE=$(aws iam get-role --role-name glue-crawler-role --query 'Role.RoleName' --output text 2>/dev/null || echo "NOT_FOUND")
+          echo "crawler_exists=${CRAWLER_ROLE}" >> $GITHUB_OUTPUT
+          
+          # Check Lambda Role
+          LAMBDA_ROLE=$(aws iam get-role --role-name lambda-role --query 'Role.RoleName' --output text 2>/dev/null || echo "NOT_FOUND")
+          echo "lambda_exists=${LAMBDA_ROLE}" >> $GITHUB_OUTPUT
+          
+          # Check StepFunction Role
+          STEPFUNCTION_ROLE=$(aws iam get-role --role-name stepfunction-role --query 'Role.RoleName' --output text 2>/dev/null || echo "NOT_FOUND")
+          echo "stepfunction_exists=${STEPFUNCTION_ROLE}" >> $GITHUB_OUTPUT
+
       # Deploy Crawler Role
       - name: Deploy Crawler Role
+        if: steps.check_roles.outputs.crawler_exists == 'NOT_FOUND' || inputs.force_update
         working-directory: IaC/IAM/Glue_Crawler_Role
         run: |
           terraform init
@@ -43,6 +65,7 @@ jobs:
 
       # Deploy Lambda Role
       - name: Deploy Lambda Role
+        if: steps.check_roles.outputs.lambda_exists == 'NOT_FOUND' || inputs.force_update
         working-directory: IaC/IAM/Lambda_Role
         run: |
           terraform init
@@ -52,8 +75,9 @@ jobs:
           aws s3 cp tfplan-iam-lambda-role s3://${{ github.event.inputs.s3_bucket }}/${{ github.event.inputs.s3_path }}/tfplan-iam-lambda-role-${TIMESTAMP}
           terraform apply -auto-approve tfplan-iam-lambda-role
 
-      # Deploy StepFuction Role
-      - name: Deploy Lambda Role
+      # Deploy StepFunction Role
+      - name: Deploy StepFunction Role
+        if: steps.check_roles.outputs.stepfunction_exists == 'NOT_FOUND' || inputs.force_update
         working-directory: IaC/IAM/Step_Function_Role
         run: |
           terraform init
