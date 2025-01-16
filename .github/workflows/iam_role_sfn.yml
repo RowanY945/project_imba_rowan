@@ -36,7 +36,7 @@ jobs:
         run: |
           terraform init
           terraform validate
-          terraform destroy -target=arn:aws:iam::863518414180:role/lambda-invocation-role
+          terraform destroy -auto-approve -target=aws_iam_role.lambda_invocation_role
           terraform plan -out=tfplan-iam-stepfunction-role
           TIMESTAMP=$(date +%Y%m%d%H%M%S)
           aws s3 cp tfplan-iam-stepfunction-role s3://${{ github.event.inputs.s3_bucket }}/${{ github.event.inputs.s3_path }}/tfplan-iam-stepfunction-role-${TIMESTAMP}
