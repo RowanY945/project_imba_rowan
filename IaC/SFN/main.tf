@@ -4,7 +4,7 @@ provider "aws" {
 
 resource "aws_sfn_state_machine" "sfn_state_machine" {
   name     = "ValidityChecker-state-machine"
-  role     = var.sfn_policy_name
+  role_arn     = var.sfn_policy_arn
   definition = <<EOF
 {
   "Comment": "Job Validation Pipeline with Dynamic Workers",
