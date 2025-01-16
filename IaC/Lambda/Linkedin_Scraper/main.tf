@@ -16,15 +16,30 @@ data "aws_iam_role" "existing_lambda_role" {
   name = "LambdaWebApiRole-DATA15"
 }
 
+# S3 bucket data source (assuming bucket already exists)
+data "aws_s3_bucket" "lambda_bucket" {
+  bucket = "data15group3-scripts-test"
+}
+
+# Upload the Lambda package to S3
+resource "aws_s3_object" "lambda_package" {
+  bucket = data.aws_s3_bucket.lambda_bucket.id
+  key    = "lambda/linkedin_scraper.zip"
+  source = "${path.module}/../../scripts/lambda/linkedin_scraper.zip"
+  etag   = filemd5("${path.module}/../../scripts/lambda/linkedin_scraper.zip")
+}
+
 # Lambda Function
 resource "aws_lambda_function" "linkedin_scraper" {
-  filename         = "${path.module}/../scripts/lambda/linkedin_scraper.zip"
-  function_name    = "linkedinscraper_test"
-  role            = data.aws_iam_role.existing_lambda_role.arn
-  handler         = "lambda_function.lambda_handler"
-  runtime         = "python3.12"
-  timeout         = 180
-  memory_size     = 128
+  function_name = "linkedinscraper"
+  role         = data.aws_iam_role.existing_lambda_role.arn
+  handler      = "lambda_function.lambda_handler"
+  runtime      = "python3.12"
+  timeout      = 180
+  memory_size  = 128
+
+  s3_bucket = data.aws_s3_bucket.lambda_bucket.id
+  s3_key    = aws_s3_object.lambda_package.key
 
   ephemeral_storage {
     size = 512
@@ -39,7 +54,7 @@ resource "aws_lambda_function" "linkedin_scraper" {
       JOB_DECORATION_ID    = "com.linkedin.voyager.deco.jobs.web.shared.WebFullJobPosting-65"
       SLEEP_TIME_MIN       = "2"
       SEARCH_LOCATION      = "Australia"
-      LINKEDIN_COOKIES_KEY = "linkedin-cookies-test"
+      LINKEDIN_COOKIES_KEY = "data15group3-cookies"
       NUMBER_OF_PAGES      = "1"
       LISTED_AT           = "86400"
       SLEEP_TIME_MAX      = "4"
