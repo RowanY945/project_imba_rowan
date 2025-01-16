@@ -36,6 +36,7 @@ jobs:
         run: |
           terraform init
           terraform validate
+          terraform import aws_iam_role.lambda_invocation_role "arn:aws:iam::863518414180:role/lambda-invocation-role"
           terraform destroy -auto-approve -target=aws_iam_role.lambda_invocation_role
           terraform plan -out=tfplan-iam-stepfunction-role
           TIMESTAMP=$(date +%Y%m%d%H%M%S)
