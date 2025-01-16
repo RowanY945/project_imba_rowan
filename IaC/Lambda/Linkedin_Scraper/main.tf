@@ -25,8 +25,6 @@ resource "aws_lambda_function" "linkedin_scraper" {
   timeout      = 180
   memory_size  = 128
 
-  s3_bucket = data.aws_s3_bucket.lambda_bucket.id
-  s3_key    = aws_s3_object.lambda_package.key
 
   ephemeral_storage {
     size = 512
