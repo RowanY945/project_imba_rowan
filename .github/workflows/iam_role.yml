@@ -51,3 +51,14 @@ jobs:
           TIMESTAMP=$(date +%Y%m%d%H%M%S)
           aws s3 cp tfplan-iam-lambda-role s3://${{ github.event.inputs.s3_bucket }}/${{ github.event.inputs.s3_path }}/tfplan-iam-lambda-role-${TIMESTAMP}
           terraform apply -auto-approve tfplan-iam-lambda-role
+
+      # Deploy StepFuction Role
+      - name: Deploy Lambda Role
+        working-directory: IaC/IAM/Step_Function_Role
+        run: |
+          terraform init
+          terraform validate
+          terraform plan -out=tfplan-iam-stepfunction-role
+          TIMESTAMP=$(date +%Y%m%d%H%M%S)
+          aws s3 cp tfplan-iam-stepfunction-role s3://${{ github.event.inputs.s3_bucket }}/${{ github.event.inputs.s3_path }}/tfplan-iam-stepfunction-role-${TIMESTAMP}
+          terraform apply -auto-approve tfplan-iam-stepfunction-role
