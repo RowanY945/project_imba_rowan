@@ -44,20 +44,21 @@ jobs:
             
             # Calculate SHA256 hash of the zip file
             ZIP_HASH=$(sha256sum $file | cut -d ' ' -f1)
+            echo "$ZIP_HASH"
             
             # Try to get current hash from S3 metadata
             # Returns "none" if file doesn't exist
             S3_HASH=$(aws s3api head-object \
               --bucket data15-scripts-rowan \
               --key lambda/$FUNC_NAME/$FILENAME \
-              --query 'Metadata.SHA256' \
+              --query 'Metadata.sha256' \
               --output text 2>/dev/null || echo "none")
             
             # Upload only if the file is new or changed
             if [ "$ZIP_HASH" != "$S3_HASH" ]; then
               echo "Uploading $FILENAME to S3..."
               aws s3 cp $file s3://data15-scripts-rowan/lambda/$FUNC_NAME/$FILENAME \
-                --metadata SHA256=$ZIP_HASH
+                --metadata sha256=$ZIP_HASH
               echo "Successfully uploaded $FILENAME with hash: $ZIP_HASH"
             else
               echo "No changes detected for $FILENAME, skipping upload"
