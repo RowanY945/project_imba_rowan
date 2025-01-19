@@ -28,7 +28,7 @@ resource "aws_lambda_function" "test" {
   s3_bucket         = data.aws_s3_object.lambda_package.bucket
   s3_key            = data.aws_s3_object.lambda_package.key
   # Use the metadata hash to detect changes
-  source_code_hash  = data.aws_s3_object.lambda_package.metadata["SHA256"]
+  source_code_hash  = data.aws_s3_object.lambda_package.metadata["sha256"]
   
   function_name    = "test"
   role            = data.aws_iam_role.existing_lambda_role.arn
