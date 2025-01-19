@@ -89,7 +89,6 @@ jobs:
             # Initialize Terraform (downloads providers and modules)
             echo "Initializing Terraform..."
             terraform init
-            terraform state rm aws_lambda_function.$FUNC_NAME
             terraform import aws_lambda_function.$FUNC_NAME $FUNC_NAME
 
             echo "Applying Terraform configuration..."
