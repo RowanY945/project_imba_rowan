@@ -56,7 +56,7 @@ jobs:
             # Upload only if the file is new or changed
             if [ "$ZIP_HASH" != "$S3_HASH" ]; then
               echo "Uploading $FILENAME to S3..."
-              aws s3 cp $file s3://data15-scripts-rowan/lambda/$FUNC_NAME \
+              aws s3 cp $file s3://data15-scripts-rowan/lambda/$FUNC_NAME/$FILENAME \
                 --metadata SHA256=$ZIP_HASH
               echo "Successfully uploaded $FILENAME with hash: $ZIP_HASH"
             else
