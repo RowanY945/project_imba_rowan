@@ -49,7 +49,7 @@ jobs:
             # Returns "none" if file doesn't exist
             S3_HASH=$(aws s3api head-object \
               --bucket data15-scripts-rowan \
-              --key lambda/$FUNC_NAME/ \
+              --key lambda/$FUNC_NAME/$FILENAME \
               --query 'Metadata.SHA256' \
               --output text 2>/dev/null || echo "none")
             
