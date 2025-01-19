@@ -1,40 +1,99 @@
-name: Deploy CloudFormation Stacks
+name: Lambda Function Deployment
 
-# Controls when the action will run.
 on:
-  # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
-    inputs:
-      region:
-        description: "AWS Region"
-        required: true
-        default: "ap-southeast-2"
-      bucketName:
-        description: "S3 Bucket Name"
-        default: "imba-test-bucket-leo"
-        required: true
+  push:
+    paths:
+      - 'scripts/lambda/**'    # Only triggers for changes in scripts/lambda directory
+    branches:
+      - main
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  cfn-deployment:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
+      # Check out the repository code
+      - uses: actions/checkout@v3
 
+      # Set up AWS credentials for S3 and Lambda access
       - name: Configure AWS credentials
-        id: creds
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ github.event.inputs.region }} 
+          aws-region: ap-southeast-2    # Australia region to match your setup
 
-      - name: Deploy S3 Buckets CloudFormation Stacks
-        id: s3-buckets
-        uses: aws-actions/aws-cloudformation-github-deploy@v1.0.3
+      # Identify which files have changed in the Lambda scripts directory
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@v41
         with:
-          name:  s3-buckets
-          template: cfn/s3.yml
-          parameter-overrides: >-
-            BucketName=${{ github.event.inputs.bucketName }}
+          files: scripts/lambda/**
+
+      # Handle S3 uploads for changed Lambda functions
+      - name: Process changed functions
+        run: |
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            # Only process zip files
+            if [[ $file != *.zip ]]; then
+              continue
+            fi
+            
+            # Get the filename (e.g., "test.zip")
+            FILENAME=$(basename $file)
+            
+            # Calculate SHA256 hash of the zip file
+            ZIP_HASH=$(sha256sum $file | cut -d ' ' -f1)
+            
+            # Try to get current hash from S3 metadata
+            # Returns "none" if file doesn't exist
+            S3_HASH=$(aws s3api head-object \
+              --bucket data15-scripts-rowan \
+              --key lambda/$FILENAME \
+              --query 'Metadata.SHA256' \
+              --output text 2>/dev/null || echo "none")
+            
+            # Upload only if the file is new or changed
+            if [ "$ZIP_HASH" != "$S3_HASH" ]; then
+              echo "Uploading $FILENAME to S3..."
+              aws s3 cp $file s3://data15-scripts-rowan/lambda/$FILENAME \
+                --metadata SHA256=$ZIP_HASH
+              echo "Successfully uploaded $FILENAME with hash: $ZIP_HASH"
+            else
+              echo "No changes detected for $FILENAME, skipping upload"
+            fi
+          done
+
+      # Set up Terraform for infrastructure updates
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # Run Terraform for each changed function
+      - name: Run Terraform for changed functions
+        run: |
+          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
+            # Skip non-zip files
+            if [[ $file != *.zip ]]; then
+              continue
+            fi
+            
+            # Extract function name without .zip extension
+            FUNC_NAME=$(basename $file .zip)
+            
+            echo "Processing Terraform for function: $FUNC_NAME"
+            
+            # Change to the function's Terraform directory
+            cd IaC/Lambda/$FUNC_NAME
+            
+            # Initialize Terraform (downloads providers and modules)
+            echo "Initializing Terraform..."
+            terraform init
+            
+            # Apply the Terraform configuration
+            echo "Applying Terraform configuration..."
+            terraform apply -auto-approve
+            
+            # Return to the repository root for the next iteration
+            cd ../../../
+            
+            echo "Completed deployment for $FUNC_NAME"
+          done
