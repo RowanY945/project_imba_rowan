@@ -98,12 +98,14 @@ jobs:
             fi
 
             # Separate check for CloudWatch log group
-            if aws logs describe-log-groups --log-group-name-prefix "/aws/lambda/$FUNC_NAME" \
-              --query 'logGroups[0].logGroupName' --output text 2>/dev/null; then
-              echo "Importing existing CloudWatch log group..."
-              terraform import aws_cloudwatch_log_group.lambda_log_group "/aws/lambda/$FUNC_NAME"
+            LOG_GROUP=$(aws logs describe-log-groups --log-group-name-prefix "/aws/lambda/$FUNC_NAME" \
+                            --query 'logGroups[0].logGroupName' --output text 2>/dev/null)
+
+            if [ -n "$LOG_GROUP" ]; then
+                echo "Importing existing CloudWatch log group..."
+                terraform import aws_cloudwatch_log_group.lambda_log_group "/aws/lambda/$FUNC_NAME"
             else
-              echo "Lambda function doesn't exist, will create new one"
+                echo "CloudWatch log group doesn't exist, skipping import"
             fi
             
             echo "Planning and uploading the plan to data15group3-execution-plans..."
