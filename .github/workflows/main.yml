@@ -100,8 +100,8 @@ jobs:
             # Separate check for CloudWatch log group
             if aws logs describe-log-groups \
               --log-group-name-prefix "/aws/lambda/$FUNC_NAME" \
-              --query "length(logGroups[?logGroupName=='/aws/lambda/${FUNC_NAME}']) > 0" \
-              --output text | grep -q "true"; then
+              --query "length(logGroups[?logGroupName=='/aws/lambda/${FUNC_NAME}'])" \
+              --output text | grep -q "1"; then
               echo "Importing existing CloudWatch log group..."
               terraform import aws_cloudwatch_log_group.lambda_log_group "/aws/lambda/$FUNC_NAME" || true
             else
