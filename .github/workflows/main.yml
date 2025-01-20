@@ -47,7 +47,7 @@ jobs:
             
             # Get current hash from S3
             S3_HASH=$(aws s3api head-object \
-              --bucket data15group3-scripts-test \
+              --bucket data15-scripts-rowan \
               --key lambda/$FUNC_NAME/$FILENAME \
               --query 'Metadata.sha256' \
               --output text 2>/dev/null || echo "none")
@@ -55,7 +55,7 @@ jobs:
             
             if [ "$ZIP_HASH" != "$S3_HASH" ]; then
               echo "Changes detected for $FILENAME, uploading to S3..."
-              aws s3 cp $file s3://data15group3-scripts-test/lambda/$FUNC_NAME/$FILENAME \
+              aws s3 cp $file s3://data15-scripts-rowan/lambda/$FUNC_NAME/$FILENAME \
                 --metadata sha256=$ZIP_HASH
               echo "Successfully uploaded $FILENAME"
               
