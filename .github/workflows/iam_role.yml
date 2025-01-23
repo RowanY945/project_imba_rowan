@@ -31,10 +31,20 @@ jobs:
       - name: Get Changed Files
         id: changed_files
         run: |
-          echo "crawler_changed=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -c "IaC/IAM/Glue_Crawler_Role" || echo "0")" >> $GITHUB_OUTPUT
-          echo "lambda_changed=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -c "IaC/IAM/Lambda_Role" || echo "0")" >> $GITHUB_OUTPUT
-          echo "stepfunction_changed=$(git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -c "IaC/IAM/Step_Function_Role" || echo "0")" >> $GITHUB_OUTPUT
-
+          delimiter="EOF"
+          
+          echo "crawler_changed<<$delimiter" >> $GITHUB_OUTPUT
+          git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -c "IaC/IAM/Glue_Crawler_Role" || echo "0" >> $GITHUB_OUTPUT
+          echo "$delimiter" >> $GITHUB_OUTPUT
+          
+          echo "lambda_changed<<$delimiter" >> $GITHUB_OUTPUT
+          git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -c "IaC/IAM/Lambda_Role" || echo "0" >> $GITHUB_OUTPUT
+          echo "$delimiter" >> $GITHUB_OUTPUT
+          
+          echo "stepfunction_changed<<$delimiter" >> $GITHUB_OUTPUT
+          git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -c "IaC/IAM/Step_Function_Role" || echo "0" >> $GITHUB_OUTPUT
+          echo "$delimiter" >> $GITHUB_OUTPUT
+          
       # Check and import existing roles
       - name: Check and Import Roles
         id: check_roles
