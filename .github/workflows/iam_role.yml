@@ -44,17 +44,17 @@ jobs:
           echo "stepfunction_changed<<$delimiter" >> $GITHUB_OUTPUT
           git diff --name-only ${{ github.event.before }} ${{ github.event.after }} | grep -c "IaC/IAM/Step_Function_Role" || echo "0" >> $GITHUB_OUTPUT
           echo "$delimiter" >> $GITHUB_OUTPUT
-          
+
       # Check and import existing roles
       - name: Check and Import Roles
         id: check_roles
         run: |
           # Check and import Crawler Role
-          if aws iam get-role --role-name glue-crawler-role >/dev/null 2>&1; then
+          if aws iam get-role --role-name AWSGlueServiceRole-DATA15Crawler >/dev/null 2>&1; then
             if [ "${{ steps.changed_files.outputs.crawler_changed }}" != "0" ]; then
               cd IaC/IAM/Glue_Crawler_Role
               terraform init
-              terraform import aws_iam_role.glue_crawler_role glue-crawler-role
+              terraform import aws_iam_role.glue_crawler_role AWSGlueServiceRole-DATA15Crawler
               echo "crawler_exists=true" >> $GITHUB_OUTPUT
             fi
           else
@@ -62,11 +62,11 @@ jobs:
           fi
 
           # Check and import Lambda Role
-          if aws iam get-role --role-name lambda-role >/dev/null 2>&1; then
+          if aws iam get-role --role-name LambdaWebApiRole-DATA15 >/dev/null 2>&1; then
             if [ "${{ steps.changed_files.outputs.lambda_changed }}" != "0" ]; then
               cd IaC/IAM/Lambda_Role
               terraform init
-              terraform import aws_iam_role.lambda_role lambda-role
+              terraform import aws_iam_role.lambda_role LambdaWebApiRole-DATA15
               echo "lambda_exists=true" >> $GITHUB_OUTPUT
             fi
           else
@@ -74,11 +74,11 @@ jobs:
           fi
 
           # Check and import StepFunction Role
-          if aws iam get-role --role-name stepfunction-role >/dev/null 2>&1; then
+          if aws iam get-role --role-name StepFunctionsLambdaRole-DATA15 >/dev/null 2>&1; then
             if [ "${{ steps.changed_files.outputs.stepfunction_changed }}" != "0" ]; then
               cd IaC/IAM/Step_Function_Role
               terraform init
-              terraform import aws_iam_role.stepfunction_role stepfunction-role
+              terraform import aws_iam_role.stepfunction_role StepFunctionsLambdaRole-DATA15
               echo "stepfunction_exists=true" >> $GITHUB_OUTPUT
             fi
           else

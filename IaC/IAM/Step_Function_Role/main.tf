@@ -3,8 +3,8 @@ provider "aws" {
   region = var.aws_region
 }
 
-resource "aws_iam_role" "lambda_invocation_role" {
-  name = "lambda-invocation-role"
+resource "aws_iam_role" "stepfunction_role" {
+  name = "StepFunctionsLambdaRole-DATA15"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -21,7 +21,7 @@ resource "aws_iam_role" "lambda_invocation_role" {
 }
 
 resource "aws_iam_role_policy" "lambda_invocation_policy" {
-  name = "StepFunctionsLambdaRole-DATA15"
+  name = "StepFunctionsLambdaPolicy-DATA15"
   role = aws_iam_role.lambda_invocation_role.id
 
   policy = jsonencode({
